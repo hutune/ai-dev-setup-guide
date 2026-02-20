@@ -5,20 +5,21 @@
 ## Kiến trúc tổng quan
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                   AI Dev Workflow                        │
-├──────────────────┬──────────────────┬───────────────────┤
-│   claude-anti    │   claude-real    │    opencode       │
-│  (Gemini Ultra)  │  (Claude Team)   │  (GPT + Copilot)  │
-│                  │                  │                   │
-│  Antigravity     │  Anthropic API   │  OpenAI OAuth     │
-│  Port :8045      │  Real Account    │  GitHub OAuth     │
-└──────────────────┴──────────────────┴───────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                        AI Dev Workflow                            │
+├──────────────┬──────────────────┬──────────────┬────────────────┤
+│  Anti IDE    │   claude-anti    │ claude-real  │   opencode     │
+│ (All-in-One) │ (Gemini Ultra)   │(Claude Team) │(GPT + Copilot) │
+│              │                  │              │                │
+│ IDE + Chat   │ Antigravity      │ Anthropic    │ OpenAI OAuth   │
+│ + Terminal   │ Port :8045       │ Real Account │ GitHub OAuth   │
+└──────────────┴──────────────────┴──────────────┴────────────────┘
 ```
 
 | Tool | Provider | Subscription | Dùng khi nào |
 |---|---|---|---|
-| `claude-anti` | Gemini Ultra (Antigravity) | Google free quota | Coding hàng ngày, agentic tasks |
+| **Antigravity IDE** | Gemini (Antigravity Tools) | Google Gemini | **All-in-one**: code + chat + terminal |
+| `claude-anti` | Gemini Ultra (Antigravity) | Google free quota | Terminal coding, agentic tasks |
 | `claude-real` | Claude Opus 4.6 | Claude Team | Cần real Claude, billing tracking |
 | `opencode` | GPT-4o + Copilot Pro | ChatGPT Plus + GitHub | GPT perspective, Copilot completions |
 
@@ -134,6 +135,40 @@ opencode
 opencode auth list      # Xem danh sách providers
 opencode auth logout    # Logout provider
 ```
+
+---
+
+## Antigravity IDE — All-in-One Setup
+
+**Antigravity IDE** (tức là editor này) là setup all-in-one nhất — trong một cửa sổ duy nhất bạn có:
+
+| Tính năng | Mô tả |
+|---|---|
+| 📂 **Code Editor** | Xem và chỉnh sửa file trực tiếp |
+| 💬 **AI Chat** | Chat với Gemini subscription qua Antigravity Tools |
+| 🖥️ **Integrated Terminal** | Chạy `claude-anti`, `claude-real`, `opencode` song song |
+| 🔧 **Tool Execution** | AI có thể chạy lệnh, đọc file, tìm kiếm web |
+
+### Workflow all-in-one trong Antigravity IDE
+
+```
+Antigravity IDE
+│
+├── Chat panel    → Gemini Ultra (qua Antigravity Tools)
+│
+├── Terminal 1    → claude-anti (Gemini Ultra cho agentic tasks)
+├── Terminal 2    → claude-real (Real Claude Team)
+├── Terminal 3    → opencode (GPT Plus + Copilot Pro)
+│
+└── Editor        → Xem code, diff, review
+```
+
+### Khi nào dùng Anti IDE vs terminal tools?
+
+- **Anti IDE** → Chat nhanh, hỏi về code đang mở, brainstorm, review diff
+- **claude-anti** → Agentic task dài (viết nhiều file, refactor lớn)
+- **claude-real** → Cần track API usage, billing, real Claude output
+- **opencode** → Muốn GPT-4o hoặc Copilot completions
 
 ---
 
