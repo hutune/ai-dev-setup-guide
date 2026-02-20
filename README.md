@@ -107,32 +107,19 @@ claude-anti → /logout               ❌ (xóa token, mất auth)
 
 OpenCode kết nối với nhiều AI providers qua OAuth — không cần API key riêng.
 
-### Xem providers đang kết nối
+### Kết nối provider (trong TUI)
 
-```bash
-opencode auth list
+Sau khi chạy `opencode`, gõ `/connect` để mở menu kết nối provider:
+
+```
+/connect    # Connect provider
+/models     # Switch model
+/agents     # Switch agent
+/mcps       # Toggle MCPs
+/exit       # Thoát
 ```
 
-### Kết nối provider mới (OAuth)
-
-```bash
-opencode auth login [url]
-```
-
-Ví dụ:
-```bash
-opencode auth login          # Interactive — chọn provider từ menu
-opencode auth login github   # Kết nối GitHub Copilot Pro trực tiếp
-opencode auth login openai   # Kết nối OpenAI / ChatGPT Plus
-```
-
-Sau khi chạy lệnh, browser sẽ mở để đăng nhập OAuth. Không cần nhập API key.
-
-### Logout provider
-
-```bash
-opencode auth logout
-```
+Browser sẽ mở để đăng nhập OAuth — không cần nhập API key thủ công.
 
 ### Chạy OpenCode
 
@@ -141,7 +128,12 @@ cd your-project
 opencode
 ```
 
-Trong OpenCode TUI, dùng phím tắt để switch model giữa GPT-4o và Copilot.
+### Xem / xóa providers đã kết nối (CLI)
+
+```bash
+opencode auth list      # Xem danh sách providers
+opencode auth logout    # Logout provider
+```
 
 ---
 
