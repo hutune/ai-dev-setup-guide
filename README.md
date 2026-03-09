@@ -35,6 +35,71 @@
 
 ---
 
+## Fix Vietnamese Input (Telex/VNI)
+
+Claude Code CLI mặc định xử lý sai input từ Vietnamese IME (Unikey, OpenKey, EVKey). Cần patch để gõ tiếng Việt bình thường.
+
+### Nguyên lý lỗi
+
+Vietnamese IME gửi input dạng:
+```
+v → i → e [DEL] ê → t [DEL] ệ → t    (gõ "việt")
+```
+Claude Code chỉ xử lý ký tự `DEL` rồi return, **mất ký tự thay thế** → text bị vỡ.
+
+### Cài đặt
+
+```bash
+# 1. Cài cc-vietnamese CLI
+npm install -g cc-vietnamese
+
+# 2. Cài Claude Code bản NPM (song song với native binary)
+sudo npm install -g @anthropic-ai/claude-code@latest
+
+# 3. Apply patch vào bản NPM
+sudo cc-vietnamese install
+
+# 4. Kiểm tra patch
+cc-vietnamese status
+# Output: Status: Patched ✓
+```
+
+### Bypass Native Binary
+
+> ⚠️ **QUAN TRỌNG**: Dù gọi bản NPM đã patch, Claude Code có hệ thống "tengu" tự **delegate sang native binary** (chưa patch). Cần vô hiệu hóa:
+
+```bash
+# Rename native binary (giữ backup)
+mv ~/.local/bin/claude ~/.local/bin/claude-native-backup
+
+# Verify: which claude phải trỏ đến bản NPM
+which claude
+# Output: /usr/local/bin/claude (hoặc path NPM của bạn)
+```
+
+### Env vars cần thiết
+
+Thêm vào shell functions (xem mục Shell Functions bên dưới):
+
+```bash
+export CLAUDE_CODE_DISABLE_AUTO_MIGRATE_TO_NATIVE=true
+export DISABLE_INSTALLATION_CHECKS=true
+```
+
+### Khôi phục native binary
+
+```bash
+# Nếu muốn quay lại native binary (không có Vietnamese fix)
+mv ~/.local/bin/claude-native-backup ~/.local/bin/claude
+```
+
+### Lưu ý
+
+- Patch cần **re-apply** sau mỗi lần update Claude Code (`sudo cc-vietnamese install`)
+- Xem thêm: [cc-vietnamese](https://www.npmjs.com/package/cc-vietnamese)
+
+---
+
 ## Quick Start
 
 ```bash
@@ -81,15 +146,31 @@ claude
 
 ```bash
 # Thêm vào ~/.zshrc
+
+# ===== Claude Code Switch =====
+# Dùng bản NPM đã patch Vietnamese (cc-vietnamese)
+# Thay path dưới đây bằng output của: which claude (sau khi rename native binary)
+CLAUDE_NPM="$(which claude)"
+unalias claude-anti claude-real 2>/dev/null
+
 claude-anti() {
-  python3 ~/.claude-switch.py anti && \
-  ANTHROPIC_API_KEY="sk-antigravity" \
-  ANTHROPIC_BASE_URL="http://127.0.0.1:8045" \
-  claude "$@"
+  export ANTHROPIC_API_KEY="sk-antigravity"
+  export CLAUDE_CODE_DISABLE_AUTO_MIGRATE_TO_NATIVE=true
+  export DISABLE_INSTALLATION_CHECKS=true
+  python3 ~/.claude-switch.py anti
+  echo '{"env":{"ANTHROPIC_BASE_URL":"http://127.0.0.1:8045","ANTHROPIC_API_KEY":"sk-antigravity"},"model":"claude-opus-4-6-thinking"}' > ~/.claude/settings.json
+  echo '✅ Switched to Antigravity proxy (Vietnamese patched)'
+  "$CLAUDE_NPM" "$@"
 }
 
 claude-real() {
-  python3 ~/.claude-switch.py real && claude "$@"
+  export CLAUDE_CODE_DISABLE_AUTO_MIGRATE_TO_NATIVE=true
+  export DISABLE_INSTALLATION_CHECKS=true
+  python3 ~/.claude-switch.py real
+  echo '{}' > ~/.claude/settings.json
+  unset ANTHROPIC_API_KEY ANTHROPIC_BASE_URL
+  echo '✅ Switched to Claude Team (Vietnamese patched)'
+  "$CLAUDE_NPM" "$@"
 }
 ```
 
@@ -248,6 +329,26 @@ lsof -i :8045
 # 3. Kiểm tra config
 cat ~/.antigravity_tools/gui_config.json
 ```
+
+### Claude-anti: `effortLevel` API Error 400
+
+```
+API Error: 400 Unknown name "effortLevel" at 'request.generation_config': Cannot find field.
+```
+
+**Nguyên nhân**: Claude Code gửi tham số `effortLevel` (cho thinking models) mà Gemini API không hỗ trợ.
+
+**Fix**: Update Antigravity Manager lên bản mới nhất, hoặc đổi model mapping trong `~/.antigravity_tools/gui_config.json`:
+
+```json
+"custom_mapping": {
+  "claude-opus-4-*": "gemini-3-pro"  // thay vì claude-opus-4-5-thinking
+}
+```
+
+### Claude-anti: Vietnamese input bị lỗi
+
+→ Xem mục [Fix Vietnamese Input](#fix-vietnamese-input-telexvni) ở trên
 
 ### Claude-anti: Hỏi "Do you want to use this API key?"
 
