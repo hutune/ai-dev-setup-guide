@@ -2,6 +2,26 @@
 
 > Hướng dẫn toàn diện thiết lập môi trường AI coding với **nhiều subscription** trong một workflow thống nhất.
 
+## 📑 Mục lục
+
+1. [Kiến trúc tổng quan](#kiến-trúc-tổng-quan)
+2. [Yêu cầu](#yêu-cầu)
+3. [Quick Start](#quick-start)
+4. [Antigravity IDE](#antigravity-ide)
+   - [All-in-One Setup](#all-in-one-setup)
+   - [Multi-Instance (Multi-Account)](#multi-instance-multi-account)
+5. [Antigravity Manager (Proxy)](#antigravity-manager)
+6. [Claude Code: Switching Antigravity ↔ Real](#claude-code-switching-giữa-antigravity-và-real)
+   - [Shell Functions](#shell-functions-zshrc)
+   - [Quy tắc switching](#quy-tắc-switching)
+7. [Fix Vietnamese Input (Telex/VNI)](#fix-vietnamese-input-telexvni)
+8. [OpenCode: GPT Plus + GitHub Copilot](#opencode-gpt-plus--github-copilot)
+9. [Thêm AI Provider mới](#thêm-ai-provider-mới)
+10. [Cấu trúc file](#cấu-trúc-file)
+11. [Xử lý lỗi thường gặp](#xử-lý-lỗi-thường-gặp)
+
+---
+
 ## Kiến trúc tổng quan
 
 ```
@@ -35,71 +55,6 @@
 
 ---
 
-## Fix Vietnamese Input (Telex/VNI)
-
-Claude Code CLI mặc định xử lý sai input từ Vietnamese IME (Unikey, OpenKey, EVKey). Cần patch để gõ tiếng Việt bình thường.
-
-### Nguyên lý lỗi
-
-Vietnamese IME gửi input dạng:
-```
-v → i → e [DEL] ê → t [DEL] ệ → t    (gõ "việt")
-```
-Claude Code chỉ xử lý ký tự `DEL` rồi return, **mất ký tự thay thế** → text bị vỡ.
-
-### Cài đặt
-
-```bash
-# 1. Cài cc-vietnamese CLI
-npm install -g cc-vietnamese
-
-# 2. Cài Claude Code bản NPM (song song với native binary)
-sudo npm install -g @anthropic-ai/claude-code@latest
-
-# 3. Apply patch vào bản NPM
-sudo cc-vietnamese install
-
-# 4. Kiểm tra patch
-cc-vietnamese status
-# Output: Status: Patched ✓
-```
-
-### Bypass Native Binary
-
-> ⚠️ **QUAN TRỌNG**: Dù gọi bản NPM đã patch, Claude Code có hệ thống "tengu" tự **delegate sang native binary** (chưa patch). Cần vô hiệu hóa:
-
-```bash
-# Rename native binary (giữ backup)
-mv ~/.local/bin/claude ~/.local/bin/claude-native-backup
-
-# Verify: which claude phải trỏ đến bản NPM
-which claude
-# Output: /usr/local/bin/claude (hoặc path NPM của bạn)
-```
-
-### Env vars cần thiết
-
-Thêm vào shell functions (xem mục Shell Functions bên dưới):
-
-```bash
-export CLAUDE_CODE_DISABLE_AUTO_MIGRATE_TO_NATIVE=true
-export DISABLE_INSTALLATION_CHECKS=true
-```
-
-### Khôi phục native binary
-
-```bash
-# Nếu muốn quay lại native binary (không có Vietnamese fix)
-mv ~/.local/bin/claude-native-backup ~/.local/bin/claude
-```
-
-### Lưu ý
-
-- Patch cần **re-apply** sau mỗi lần update Claude Code (`sudo cc-vietnamese install`)
-- Xem thêm: [cc-vietnamese](https://www.npmjs.com/package/cc-vietnamese)
-
----
-
 ## Quick Start
 
 ```bash
@@ -119,24 +74,114 @@ opencode       # GPT + Copilot
 
 ---
 
+## Antigravity IDE
+
+### All-in-One Setup
+
+**Antigravity IDE** là setup all-in-one nhất — trong một cửa sổ duy nhất:
+
+| Tính năng | Mô tả |
+|---|---|
+| 📂 **Code Editor** | Xem và chỉnh sửa file trực tiếp |
+| 💬 **AI Chat** | Chat với Gemini subscription qua Antigravity Tools |
+| 🖥️ **Integrated Terminal** | Chạy `claude-anti`, `claude-real`, `opencode` song song |
+| 🔧 **Tool Execution** | AI có thể chạy lệnh, đọc file, tìm kiếm web |
+
+```
+Antigravity IDE
+│
+├── Chat panel    → Gemini Ultra (qua Antigravity Tools)
+│
+├── Terminal 1    → claude-anti (Gemini Ultra cho agentic tasks)
+├── Terminal 2    → claude-real (Real Claude Team)
+├── Terminal 3    → opencode (GPT Plus + Copilot Pro)
+│
+└── Editor        → Xem code, diff, review
+```
+
+**Khi nào dùng gì?**
+
+- **Anti IDE** → Chat nhanh, hỏi về code đang mở, brainstorm, review diff
+- **claude-anti** → Agentic task dài (viết nhiều file, refactor lớn)
+- **claude-real** → Cần track API usage, billing, real Claude output
+- **opencode** → Muốn GPT-4o hoặc Copilot completions
+
+### Multi-Instance (Multi-Account)
+
+Chạy **2+ Antigravity IDE** song song với Google accounts khác nhau. Electron enforce single-instance lock → bypass bằng `--user-data-dir` riêng.
+
+#### Tạo instance thứ 2
+
+```bash
+osacompile -o "/Applications/Antigravity 2.app" -e \
+  'do shell script "\"/Applications/Antigravity.app/Contents/MacOS/Electron\" --user-data-dir=\"" & (POSIX path of (path to home folder)) & "Library/Application Support/Antigravity2\" &"'
+```
+
+→ App **Antigravity 2** xuất hiện trong `/Applications`, click mở như app bình thường.
+
+#### Shell aliases (thêm vào `~/.zshrc`)
+
+```bash
+# ===== Antigravity IDE Multi-Instance =====
+ANTI_BIN="/Applications/Antigravity.app/Contents/MacOS/Electron"
+
+anti1() {
+  echo '🚀 Opening Antigravity IDE (Account 1)...'
+  "$ANTI_BIN" --user-data-dir="$HOME/Library/Application Support/Antigravity" "$@" &
+}
+
+anti2() {
+  echo '🚀 Opening Antigravity IDE (Account 2)...'
+  "$ANTI_BIN" --user-data-dir="$HOME/Library/Application Support/Antigravity2" "$@" &
+}
+```
+
+#### Workflow
+
+```
+Antigravity IDE (Account 1)    → Project A: code, implement
+Antigravity 2   (Account 2)    → Project B: check, review
+Terminal: claude-anti           → Agentic tasks (proxy, rotate accounts)
+```
+
+> **Lưu ý**: Lần đầu mở `Antigravity 2` cần login Google. Cả 2 dùng chung binary → tự update. Có thể tạo thêm `anti3`, `anti4`...
+
+---
+
+## Antigravity Manager
+
+Antigravity Manager cần **chạy trước** khi dùng `claude-anti`.
+
+- **Port**: `8045`
+- **API Key**: `sk-antigravity`
+- **Config**: `~/.antigravity_tools/gui_config.json`
+
+```bash
+# Kiểm tra Antigravity đang chạy
+lsof -i :8045
+# hoặc
+curl http://127.0.0.1:8045/v1/models \
+  -H "Authorization: Bearer sk-antigravity"
+```
+
+---
+
 ## Claude Code: Switching giữa Antigravity và Real
 
 ### `claude-anti` — Antigravity (Gemini Ultra)
 
 ```bash
-# Chạy Claude Code qua Antigravity proxy
 ANTHROPIC_API_KEY="sk-antigravity" \
 ANTHROPIC_BASE_URL="http://127.0.0.1:8045" \
 claude
 ```
 
-**Indicator**: Header hiển thị `claude-opus-4-6-thinking · API Usage Billing`  
+**Indicator**: Header hiển thị `claude-opus-4-6-thinking · API Usage Billing`
 **Nguồn model**: Gemini Ultra (rotate nhiều Google account tự động)
 
 ### `claude-real` — Real Claude Team
 
 ```bash
-# Chạy Claude Code với real Anthropic account
 claude
 ```
 
@@ -145,8 +190,6 @@ claude
 ### Shell Functions (`~/.zshrc`)
 
 ```bash
-# Thêm vào ~/.zshrc
-
 # ===== Claude Code Switch =====
 # Dùng bản NPM đã patch Vietnamese (cc-vietnamese)
 # Thay path dưới đây bằng output của: which claude (sau khi rename native binary)
@@ -185,161 +228,85 @@ claude-anti → /logout               ❌ (xóa token, mất auth)
 
 ---
 
+## Fix Vietnamese Input (Telex/VNI)
+
+Claude Code CLI xử lý sai input từ Vietnamese IME (Unikey, OpenKey, EVKey). Cần patch để gõ tiếng Việt bình thường.
+
+### Nguyên lý lỗi
+
+Vietnamese IME gửi: `v → i → e [DEL] ê → t [DEL] ệ → t` (gõ "việt")
+Claude Code chỉ xử lý `DEL` rồi return, **mất ký tự thay thế** → text bị vỡ.
+
+### Cài đặt
+
+```bash
+# 1. Cài cc-vietnamese CLI
+npm install -g cc-vietnamese
+
+# 2. Cài Claude Code bản NPM (song song với native binary)
+sudo npm install -g @anthropic-ai/claude-code@latest
+
+# 3. Apply patch vào bản NPM
+sudo cc-vietnamese install
+
+# 4. Kiểm tra patch
+cc-vietnamese status
+# Output: Status: Patched ✓
+```
+
+### Bypass Native Binary
+
+> ⚠️ **QUAN TRỌNG**: Claude Code có hệ thống "tengu" tự **delegate sang native binary** (chưa patch). Cần vô hiệu hóa:
+
+```bash
+# Rename native binary (giữ backup)
+mv ~/.local/bin/claude ~/.local/bin/claude-native-backup
+
+# Verify: which claude phải trỏ đến bản NPM
+which claude
+# Output: /usr/local/bin/claude (hoặc path NPM của bạn)
+```
+
+### Env vars cần thiết
+
+Đã có sẵn trong [Shell Functions](#shell-functions-zshrc):
+
+```bash
+export CLAUDE_CODE_DISABLE_AUTO_MIGRATE_TO_NATIVE=true
+export DISABLE_INSTALLATION_CHECKS=true
+```
+
+### Khôi phục native binary
+
+```bash
+mv ~/.local/bin/claude-native-backup ~/.local/bin/claude
+```
+
+> **Lưu ý**: Patch cần **re-apply** sau mỗi lần update Claude Code (`sudo cc-vietnamese install`). Xem thêm: [cc-vietnamese](https://www.npmjs.com/package/cc-vietnamese)
+
+---
+
 ## OpenCode: GPT Plus + GitHub Copilot
 
 OpenCode kết nối với nhiều AI providers qua OAuth — không cần API key riêng.
-
-### Kết nối provider (trong TUI)
-
-Sau khi chạy `opencode`, gõ `/connect` để mở menu kết nối provider:
-
-```
-/connect    # Connect provider
-/models     # Switch model
-/agents     # Switch agent
-/mcps       # Toggle MCPs
-/exit       # Thoát
-```
-
-Browser sẽ mở để đăng nhập OAuth — không cần nhập API key thủ công.
-
-### Chạy OpenCode
 
 ```bash
 cd your-project
 opencode
 ```
 
-### Xem / xóa providers đã kết nối (CLI)
-
-```bash
-opencode auth list      # Xem danh sách providers
-opencode auth logout    # Logout provider
-```
-
----
-
-## Antigravity IDE — All-in-One Setup
-
-**Antigravity IDE** (tức là editor này) là setup all-in-one nhất — trong một cửa sổ duy nhất bạn có:
-
-| Tính năng | Mô tả |
+| Lệnh | Mô tả |
 |---|---|
-| 📂 **Code Editor** | Xem và chỉnh sửa file trực tiếp |
-| 💬 **AI Chat** | Chat với Gemini subscription qua Antigravity Tools |
-| 🖥️ **Integrated Terminal** | Chạy `claude-anti`, `claude-real`, `opencode` song song |
-| 🔧 **Tool Execution** | AI có thể chạy lệnh, đọc file, tìm kiếm web |
-
-### Workflow all-in-one trong Antigravity IDE
-
-```
-Antigravity IDE
-│
-├── Chat panel    → Gemini Ultra (qua Antigravity Tools)
-│
-├── Terminal 1    → claude-anti (Gemini Ultra cho agentic tasks)
-├── Terminal 2    → claude-real (Real Claude Team)
-├── Terminal 3    → opencode (GPT Plus + Copilot Pro)
-│
-└── Editor        → Xem code, diff, review
-```
-
-### Khi nào dùng Anti IDE vs terminal tools?
-
-- **Anti IDE** → Chat nhanh, hỏi về code đang mở, brainstorm, review diff
-- **claude-anti** → Agentic task dài (viết nhiều file, refactor lớn)
-- **claude-real** → Cần track API usage, billing, real Claude output
-- **opencode** → Muốn GPT-4o hoặc Copilot completions
-
----
-
-## Antigravity IDE — Multi-Instance (Multi-Account)
-
-Mặc định chỉ chạy được **1 Antigravity IDE** vì Electron enforce single-instance lock. Trick: chạy binary trực tiếp với `--user-data-dir` riêng để bypass.
-
-### Tạo instance thứ 2
+| `/connect` | Connect provider |
+| `/models` | Switch model |
+| `/agents` | Switch agent |
+| `/mcps` | Toggle MCPs |
+| `/exit` | Thoát |
 
 ```bash
-# Tạo AppleScript app wrapper
-osacompile -o "/Applications/Antigravity 2.app" -e \
-  'do shell script "\"/Applications/Antigravity.app/Contents/MacOS/Electron\" --user-data-dir=\"" & (POSIX path of (path to home folder)) & "Library/Application Support/Antigravity2\" &"'
-```
-
-→ App **Antigravity 2** xuất hiện trong `/Applications`, click mở như app bình thường.
-
-### Shell aliases (thêm vào `~/.zshrc`)
-
-```bash
-# ===== Antigravity IDE Multi-Instance =====
-ANTI_BIN="/Applications/Antigravity.app/Contents/MacOS/Electron"
-
-anti1() {
-  echo '🚀 Opening Antigravity IDE (Account 1)...'
-  "$ANTI_BIN" --user-data-dir="$HOME/Library/Application Support/Antigravity" "$@" &
-}
-
-anti2() {
-  echo '🚀 Opening Antigravity IDE (Account 2)...'
-  "$ANTI_BIN" --user-data-dir="$HOME/Library/Application Support/Antigravity2" "$@" &
-}
-```
-
-### Workflow 2 accounts song song
-
-```
-Antigravity IDE (Account 1)    → Project A: code, implement
-Antigravity 2   (Account 2)    → Project B: check, review
-Terminal: claude-anti           → Agentic tasks (dùng proxy, rotate cả 2 accounts)
-```
-
-### Lưu ý
-
-- Mỗi instance có **data directory riêng** → login Google account khác nhau
-- Lần đầu mở `Antigravity 2` sẽ cần **login Google** (instance mới, chưa có session)
-- Cả 2 dùng cùng binary gốc → **tự động update** khi Antigravity update
-- Có thể tạo thêm `anti3`, `anti4`... nếu cần nhiều accounts hơn
-
-## Antigravity Manager
-
-Antigravity Manager cần **chạy trước** khi dùng `claude-anti`.
-
-- **Port**: `8045`
-- **API Key**: `sk-antigravity`
-- **Config**: `~/.antigravity_tools/gui_config.json`
-
-### Kiểm tra Antigravity đang chạy
-
-```bash
-lsof -i :8045
-# hoặc
-curl http://127.0.0.1:8045/v1/models \
-  -H "Authorization: Bearer sk-antigravity"
-```
-
----
-
-## Cấu trúc file
-
-```
-.
-├── README.md                    # File này
-├── claude-switch.py             # Script backup/restore OAuth token
-└── .claude/
-    └── settings.local.json      # Claude Code permissions config
-```
-
-### `.claude/settings.local.json`
-
-```json
-{
-  "permissions": {
-    "allow": [
-      "WebSearch",
-      "Bash(brew install:*)",
-      "Bash(opencode)"
-    ]
-  }
-}
+# Quản lý providers
+opencode auth list      # Xem danh sách
+opencode auth logout    # Logout provider
 ```
 
 ---
@@ -354,12 +321,36 @@ opencode auth login
 # Nhập API Base URL và API Key
 ```
 
-Ví dụ các provider OpenAI-compatible:
-| Provider | Base URL | 
+| Provider | Base URL |
 |---|---|
 | GLM-4 | `https://open.bigmodel.cn/api/paas/v4/` |
 | Kimi | `https://api.moonshot.cn/v1` |
 | Minimax | `https://api.minimax.chat/v1` |
+
+---
+
+## Cấu trúc file
+
+```
+.
+├── README.md                    # File này
+├── claude-switch.py             # Script backup/restore OAuth token
+└── .claude/
+    └── settings.local.json      # Claude Code permissions config
+```
+
+```json
+// .claude/settings.local.json
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(brew install:*)",
+      "Bash(opencode)"
+    ]
+  }
+}
+```
 
 ---
 
@@ -379,12 +370,11 @@ cat ~/.antigravity_tools/gui_config.json
 ### Claude-anti: `effortLevel` API Error 400
 
 ```
-API Error: 400 Unknown name "effortLevel" at 'request.generation_config': Cannot find field.
+API Error: 400 Unknown name "effortLevel" at 'request.generation_config'
 ```
 
-**Nguyên nhân**: Claude Code gửi tham số `effortLevel` (cho thinking models) mà Gemini API không hỗ trợ.
-
-**Fix**: Update Antigravity Manager lên bản mới nhất, hoặc đổi model mapping trong `~/.antigravity_tools/gui_config.json`:
+**Nguyên nhân**: Claude Code gửi tham số `effortLevel` mà Gemini API không hỗ trợ.
+**Fix**: Update Antigravity Manager lên bản mới nhất, hoặc đổi model mapping:
 
 ```json
 "custom_mapping": {
@@ -394,7 +384,7 @@ API Error: 400 Unknown name "effortLevel" at 'request.generation_config': Cannot
 
 ### Claude-anti: Vietnamese input bị lỗi
 
-→ Xem mục [Fix Vietnamese Input](#fix-vietnamese-input-telexvni) ở trên
+→ Xem mục [Fix Vietnamese Input](#fix-vietnamese-input-telexvni)
 
 ### Claude-anti: Hỏi "Do you want to use this API key?"
 
