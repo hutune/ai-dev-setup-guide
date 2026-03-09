@@ -253,6 +253,52 @@ Antigravity IDE
 
 ---
 
+## Antigravity IDE — Multi-Instance (Multi-Account)
+
+Mặc định chỉ chạy được **1 Antigravity IDE** vì Electron enforce single-instance lock. Trick: chạy binary trực tiếp với `--user-data-dir` riêng để bypass.
+
+### Tạo instance thứ 2
+
+```bash
+# Tạo AppleScript app wrapper
+osacompile -o "/Applications/Antigravity 2.app" -e \
+  'do shell script "\"/Applications/Antigravity.app/Contents/MacOS/Electron\" --user-data-dir=\"" & (POSIX path of (path to home folder)) & "Library/Application Support/Antigravity2\" &"'
+```
+
+→ App **Antigravity 2** xuất hiện trong `/Applications`, click mở như app bình thường.
+
+### Shell aliases (thêm vào `~/.zshrc`)
+
+```bash
+# ===== Antigravity IDE Multi-Instance =====
+ANTI_BIN="/Applications/Antigravity.app/Contents/MacOS/Electron"
+
+anti1() {
+  echo '🚀 Opening Antigravity IDE (Account 1)...'
+  "$ANTI_BIN" --user-data-dir="$HOME/Library/Application Support/Antigravity" "$@" &
+}
+
+anti2() {
+  echo '🚀 Opening Antigravity IDE (Account 2)...'
+  "$ANTI_BIN" --user-data-dir="$HOME/Library/Application Support/Antigravity2" "$@" &
+}
+```
+
+### Workflow 2 accounts song song
+
+```
+Antigravity IDE (Account 1)    → Project A: code, implement
+Antigravity 2   (Account 2)    → Project B: check, review
+Terminal: claude-anti           → Agentic tasks (dùng proxy, rotate cả 2 accounts)
+```
+
+### Lưu ý
+
+- Mỗi instance có **data directory riêng** → login Google account khác nhau
+- Lần đầu mở `Antigravity 2` sẽ cần **login Google** (instance mới, chưa có session)
+- Cả 2 dùng cùng binary gốc → **tự động update** khi Antigravity update
+- Có thể tạo thêm `anti3`, `anti4`... nếu cần nhiều accounts hơn
+
 ## Antigravity Manager
 
 Antigravity Manager cần **chạy trước** khi dùng `claude-anti`.
