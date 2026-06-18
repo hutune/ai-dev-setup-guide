@@ -59,11 +59,11 @@
 
 ```bash
 # Clone repo
-git clone https://github.com/hutune/claude-code-switch-guide
-cd claude-code-switch-guide
+git clone https://github.com/hutune/ai-dev-setup-guide
+cd ai-dev-setup-guide
 
 # Setup shell functions
-curl -o ~/.claude-switch.py https://raw.githubusercontent.com/hutune/claude-code-switch-guide/main/claude-switch.py
+curl -o ~/.claude-switch.py https://raw.githubusercontent.com/hutune/ai-dev-setup-guide/main/claude-switch.py
 # Thêm functions vào ~/.zshrc (xem hướng dẫn chi tiết bên dưới)
 
 # Chạy tool theo nhu cầu
