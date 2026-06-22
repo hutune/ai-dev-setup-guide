@@ -397,6 +397,17 @@ opencode auth logout
 opencode auth login
 ```
 
+### Git / GitHub CLI bị lỗi Authentication trong Terminal IDE
+
+**Nguyên nhân**: Môi trường của Antigravity IDE (hoặc các AI agent) có thể tự động tiêm biến môi trường `GITHUB_TOKEN=github_pat_antigravitydummytoken`. Khi bạn mở Terminal tích hợp trong IDE và gõ các lệnh Git hoặc `gh`, nó sẽ ưu tiên sử dụng token ảo này thay vì tài khoản thật (Keychain) dẫn đến lỗi xác thực (Invalid username or token) hoặc bị treo thao tác.
+
+**Fix**: Xóa bỏ biến môi trường này mỗi khi mở Terminal. Thêm dòng sau vào **cuối** file `~/.zshrc` (hoặc `~/.bash_profile`):
+
+```bash
+# Bỏ biến GITHUB_TOKEN do IDE cấp để không ảnh hưởng đến tài khoản thật trên máy
+unset GITHUB_TOKEN
+```
+
 ---
 
 ## License
